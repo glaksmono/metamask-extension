@@ -7,7 +7,6 @@ import { uniqBy, isEqual } from 'lodash';
 import { useHistory } from 'react-router-dom';
 import { getTokenTrackerLink } from '@metamask/etherscan-link';
 import { MetaMetricsContext } from '../../../contexts/metametrics.new';
-import { useNewMetricEvent } from '../../../hooks/useMetricEvent';
 import {
   useTokensToSearch,
   getRenderableTokenData,
@@ -348,16 +347,6 @@ export default function BuildQuote({
     ? getURLHostName(blockExplorerTokenLink)
     : t('etherscan');
 
-  const blockExplorerLinkClickedEvent = useNewMetricEvent({
-    category: 'Swaps',
-    event: 'Clicked Block Explorer Link',
-    properties: {
-      link_type: 'Token Tracker',
-      action: 'Swaps Confirmation',
-      block_explorer_domain: getURLHostName(blockExplorerTokenLink),
-    },
-  });
-
   const { destinationTokenAddedForSwap } = fetchParams || {};
   const { address: toAddress } = toToken || {};
   const onToSelect = useCallback(
@@ -443,23 +432,29 @@ export default function BuildQuote({
     fromTokenBalance,
   ]);
 
-  const buildQuotePageLoadedEvent = useNewMetricEvent({
-    event: 'Build Quote Page Loaded',
-    category: 'swaps',
-    sensitiveProperties: {
-      is_hardware_wallet: hardwareWalletUsed,
-      hardware_wallet_type: hardwareWalletType,
-      stx_enabled: smartTransactionsEnabled,
-      current_stx_enabled: currentSmartTransactionsEnabled,
-      stx_user_opt_in: smartTransactionsOptInStatus,
-    },
-  });
-
   useEffect(() => {
     dispatch(resetSwapsPostFetchState());
     dispatch(setReviewSwapClickedTimestamp());
-    buildQuotePageLoadedEvent();
-  }, [dispatch, buildQuotePageLoadedEvent]);
+    metaMetricsEvent({
+      event: 'Build Quote Page Loaded',
+      category: 'swaps',
+      sensitiveProperties: {
+        is_hardware_wallet: hardwareWalletUsed,
+        hardware_wallet_type: hardwareWalletType,
+        stx_enabled: smartTransactionsEnabled,
+        current_stx_enabled: currentSmartTransactionsEnabled,
+        stx_user_opt_in: smartTransactionsOptInStatus,
+      },
+    });
+  }, [
+    dispatch,
+    metaMetricsEvent,
+    currentSmartTransactionsEnabled,
+    hardwareWalletType,
+    hardwareWalletUsed,
+    smartTransactionsEnabled,
+    smartTransactionsOptInStatus,
+  ]);
 
   const BlockExplorerLink = () => {
     return (
@@ -467,7 +462,15 @@ export default function BuildQuote({
         className="build-quote__token-etherscan-link build-quote__underline"
         key="build-quote-etherscan-link"
         onClick={() => {
-          blockExplorerLinkClickedEvent();
+          metaMetricsEvent({
+            event: 'Clicked Block Explorer Link',
+            category: 'Swaps',
+            properties: {
+              link_type: 'Token Tracker',
+              action: 'Swaps Confirmation',
+              block_explorer_domain: getURLHostName(blockExplorerTokenLink),
+            },
+          });
           global.platform.openTab({
             url: blockExplorerTokenLink,
           });
@@ -792,7 +795,17 @@ export default function BuildQuote({
                       className="build-quote__token-etherscan-link"
                       key="build-quote-etherscan-link"
                       onClick={() => {
-                        blockExplorerLinkClickedEvent();
+                        metaMetricsEvent({
+                          event: 'Clicked Block Explorer Link',
+                          category: 'Swaps',
+                          properties: {
+                            link_type: 'Token Tracker',
+                            action: 'Swaps Confirmation',
+                            block_explorer_domain: getURLHostName(
+                              blockExplorerTokenLink,
+                            ),
+                          },
+                        });
                         global.platform.openTab({
                           url: blockExplorerTokenLink,
                         });
